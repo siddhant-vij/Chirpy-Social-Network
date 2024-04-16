@@ -16,7 +16,12 @@ func main() {
 	mux.HandleFunc("GET /admin/metrics", apiCfg.metrics)
 	mux.HandleFunc("/api/reset", apiCfg.reset)
 
-	mux.HandleFunc("POST /api/validate_chirp", validateChirp)
+	mux.HandleFunc("GET /api/chirps", getChirps)
+	mux.HandleFunc("POST /api/chirps", postChirp)
+
+	mux.HandleFunc("GET /api/chirps/{id}", getChirpsById)
+
+	mux.HandleFunc("POST /api/users", createUser)
 
 	log.Fatal(http.ListenAndServe(":8080", corsMux))
 }
