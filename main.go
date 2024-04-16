@@ -12,9 +12,9 @@ func main() {
 	apiCfg := &apiConfig{}
 	mux.Handle("/app/*", apiCfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 
-	mux.HandleFunc("GET /healthz", readiness)
-	mux.HandleFunc("GET /metrics", apiCfg.metrics)
-	mux.HandleFunc("/reset", apiCfg.reset)
+	mux.HandleFunc("GET /api/healthz", readiness)
+	mux.HandleFunc("GET /admin/metrics", apiCfg.metrics)
+	mux.HandleFunc("/api/reset", apiCfg.reset)
 
 	log.Fatal(http.ListenAndServe(":8080", corsMux))
 }
