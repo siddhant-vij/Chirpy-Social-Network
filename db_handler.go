@@ -15,6 +15,44 @@ func getChirps(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	authorID := r.URL.Query().Get("author_id")
+	if authorID != "" {
+		authorIDInt, err := strconv.Atoi(authorID)
+		if err != nil {
+			respondWithError(w, http.StatusBadRequest, err.Error())
+			return
+		}
+
+		chirps, err := db.GetChirpsByAuthorID(authorIDInt)
+		if err != nil {
+			respondWithError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		respondWithJSON(w, http.StatusOK, chirps)
+		return
+	}
+
+	sortingOrder := r.URL.Query().Get("sort")
+	if sortingOrder != "" {
+		if sortingOrder == "asc" {
+			chirps, err := db.GetChirpsByIdAsc()
+			if err != nil {
+				respondWithError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			respondWithJSON(w, http.StatusOK, chirps)
+			return
+		} else {
+			chirps, err := db.GetChirpsByIdDesc()
+			if err != nil {
+				respondWithError(w, http.StatusInternalServerError, err.Error())
+				return
+			}
+			respondWithJSON(w, http.StatusOK, chirps)
+			return
+		}
+	}
+
 	chirps, err := db.GetChirps()
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())

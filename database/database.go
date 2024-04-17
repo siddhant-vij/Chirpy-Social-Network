@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"os"
+	"sort"
 	"sync"
 
 	"golang.org/x/crypto/bcrypt"
@@ -90,6 +91,66 @@ func (db *DB) GetChirpById(id int) (Chirp, error) {
 	}
 
 	return chirp, nil
+}
+
+func (db *DB) GetChirpsByAuthorID(authorID int) ([]Chirp, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return nil, err
+	}
+
+	chirps := make([]Chirp, 0)
+	for _, chirp := range dbStructure.Chirps {
+		if chirp.AuthorID == authorID {
+			chirps = append(chirps, chirp)
+		}
+	}
+
+	return chirps, nil
+}
+
+func (db *DB) GetChirpsByIdAsc() ([]Chirp, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return nil, err
+	}
+
+	chirps := make([]Chirp, 0, len(dbStructure.Chirps))
+	for _, chirp := range dbStructure.Chirps {
+		chirps = append(chirps, chirp)
+	}
+
+	sortChirps(chirps, "asc")
+
+	return chirps, nil
+}
+
+func (db *DB) GetChirpsByIdDesc() ([]Chirp, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return nil, err
+	}
+
+	chirps := make([]Chirp, 0, len(dbStructure.Chirps))
+	for _, chirp := range dbStructure.Chirps {
+		chirps = append(chirps, chirp)
+	}
+
+	sortChirps(chirps, "desc")
+
+	return chirps, nil
+}
+
+func sortChirps(chirps []Chirp, order string) {
+	if order == "asc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].ID < chirps[j].ID
+		})
+	} else if order == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].ID > chirps[j].ID
+		})
+	}
 }
 
 func (db *DB) createDB() error {
