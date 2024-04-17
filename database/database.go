@@ -27,9 +27,10 @@ type Chirp struct {
 }
 
 type User struct {
-	ID       int    `json:"id"`
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	ID          int    `json:"id"`
+	Email       string `json:"email"`
+	Password    string `json:"password"`
+	IsChirpyRed bool   `json:"is_chirpy_red"`
 }
 
 func NewDB(path string) (*DB, error) {
@@ -49,9 +50,9 @@ func (db *DB) CreateChirp(body string, authorID int) (Chirp, error) {
 
 	id := len(dbStructure.Chirps) + 1
 	chirp := Chirp{
-		ID:   id,
+		ID:       id,
 		AuthorID: authorID,
-		Body: body,
+		Body:     body,
 	}
 	dbStructure.Chirps[id] = chirp
 
@@ -155,9 +156,10 @@ func (db *DB) CreateUser(email, password string) (User, error) {
 
 	id := len(dbStructure.Users) + 1
 	user := User{
-		ID:       id,
-		Email:    email,
-		Password: hashed(password),
+		ID:          id,
+		Email:       email,
+		Password:    hashed(password),
+		IsChirpyRed: false,
 	}
 	dbStructure.Users[id] = user
 
@@ -214,6 +216,28 @@ func (db *DB) UpdateUser(id int, email, password string) error {
 
 	user.Email = email
 	user.Password = hashed(password)
+	dbStructure.Users[id] = user
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) UpdateUserMembership(id int) error {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	user, ok := dbStructure.Users[id]
+	if !ok {
+		return errors.New("user not found")
+	}
+
+	user.IsChirpyRed = true
 	dbStructure.Users[id] = user
 
 	err = db.writeDB(dbStructure)

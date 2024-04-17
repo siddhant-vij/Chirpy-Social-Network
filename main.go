@@ -16,6 +16,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 	apiCfg.jwtSecret = os.Getenv("JWT_SECRET")
+	apiCfg.polkaApiKey = os.Getenv("POLKA_API")
 
 	mux := http.NewServeMux()
 	corsMux := corsMiddleware(mux)
@@ -39,6 +40,8 @@ func main() {
 	mux.HandleFunc("POST /api/revoke", revokeToken)
 
 	mux.HandleFunc("DELETE /api/chirps/{id}", deleteChirp)
+
+	mux.HandleFunc(("POST /api/polka/webhooks"), polkaWebhook)
 
 	log.Fatal(http.ListenAndServe(":8080", corsMux))
 }

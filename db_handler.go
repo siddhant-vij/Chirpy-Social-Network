@@ -117,11 +117,13 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response struct {
-		ID    int    `json:"id"`
-		Email string `json:"email"`
+		ID          int    `json:"id"`
+		Email       string `json:"email"`
+		IsChirpyRed bool   `json:"is_chirpy_red"`
 	}
 	response.ID = user.ID
 	response.Email = user.Email
+	response.IsChirpyRed = user.IsChirpyRed
 	respondWithJSON(w, http.StatusCreated, response)
 }
 

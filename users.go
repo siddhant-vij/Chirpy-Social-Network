@@ -17,8 +17,9 @@ func loginUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	type parameters struct {
-		Email     string `json:"email"`
-		Password  string `json:"password"`
+		Email       string `json:"email"`
+		Password    string `json:"password"`
+		IsChirpyRed bool   `json:"is_chirpy_red"`
 	}
 	userL := parameters{}
 	err = decoder.Decode(&userL)
@@ -38,14 +39,16 @@ func loginUser(w http.ResponseWriter, r *http.Request) {
 		Email        string `json:"email"`
 		AccessToken  string `json:"token"`
 		RefreshToken string `json:"refresh_token"`
+		IsChirpyRed  bool   `json:"is_chirpy_red"`
 	}
 	response.ID = user.ID
 	response.Email = user.Email
+	response.IsChirpyRed = user.IsChirpyRed
 	response.AccessToken, err = generateAccessToken(user.ID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
-	}	
+	}
 	response.RefreshToken, err = generateRefreshToken(user.ID)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
@@ -64,8 +67,9 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	type parameters struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email       string `json:"email"`
+		Password    string `json:"password"`
+		IsChirpyRed bool   `json:"is_chirpy_red"`
 	}
 	userL := parameters{}
 	err = decoder.Decode(&userL)
@@ -90,11 +94,13 @@ func updateUser(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var response struct {
-		ID    int    `json:"id"`
-		Email string `json:"email"`
+		ID          int    `json:"id"`
+		Email       string `json:"email"`
+		IsChirpyRed bool   `json:"is_chirpy_red"`
 	}
 	response.ID = id
 	response.Email = userL.Email
+	response.IsChirpyRed = userL.IsChirpyRed
 	respondWithJSON(w, http.StatusOK, response)
 }
 
