@@ -89,7 +89,8 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	type parameters struct {
-		Email string `json:"email"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	userL := parameters{}
 	err = decoder.Decode(&userL)
@@ -98,10 +99,17 @@ func createUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, err := db.CreateUser(userL.Email)
+	user, err := db.CreateUser(userL.Email, userL.Password)
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	respondWithJSON(w, http.StatusCreated, user)
+
+	var response struct {
+		ID    int    `json:"id"`
+		Email string `json:"email"`
+	}
+	response.ID = user.ID
+	response.Email = user.Email
+	respondWithJSON(w, http.StatusCreated, response)
 }

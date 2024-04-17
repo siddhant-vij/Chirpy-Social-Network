@@ -3,13 +3,23 @@ package main
 import (
 	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 )
 
+var apiCfg *apiConfig = &apiConfig{}
+
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	apiCfg.jwtSecret = os.Getenv("JWT_SECRET")
+
 	mux := http.NewServeMux()
 	corsMux := corsMiddleware(mux)
 
-	apiCfg := &apiConfig{}
 	mux.Handle("/app/*", apiCfg.middlewareMetricsInc(http.StripPrefix("/app/", http.FileServer(http.Dir(".")))))
 
 	mux.HandleFunc("GET /api/healthz", readiness)
@@ -22,6 +32,11 @@ func main() {
 	mux.HandleFunc("GET /api/chirps/{id}", getChirpsById)
 
 	mux.HandleFunc("POST /api/users", createUser)
+	mux.HandleFunc("POST /api/login", loginUser)
+	mux.HandleFunc("PUT /api/users", updateUser)
+
+	mux.HandleFunc("POST /api/refresh", refreshToken)
+	mux.HandleFunc("POST /api/revoke", revokeToken)
 
 	log.Fatal(http.ListenAndServe(":8080", corsMux))
 }

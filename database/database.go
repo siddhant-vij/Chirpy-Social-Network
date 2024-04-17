@@ -5,6 +5,8 @@ import (
 	"errors"
 	"os"
 	"sync"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 type DB struct {
@@ -13,8 +15,9 @@ type DB struct {
 }
 
 type DBStructure struct {
-	Chirps map[int]Chirp `json:"chirps"`
-	Users map[int]User `json:"users"`
+	Chirps        map[int]Chirp  `json:"chirps"`
+	Users         map[int]User   `json:"users"`
+	RevokedTokens map[int]string `json:"revoked_tokens"`
 }
 
 type Chirp struct {
@@ -82,8 +85,9 @@ func (db *DB) GetChirpById(id int) (Chirp, error) {
 
 func (db *DB) createDB() error {
 	dbStructure := DBStructure{
-		Chirps: map[int]Chirp{},
-		Users:  map[int]User{},
+		Chirps:        map[int]Chirp{},
+		Users:         map[int]User{},
+		RevokedTokens: map[int]string{},
 	}
 	return db.writeDB(dbStructure)
 }
@@ -130,20 +134,28 @@ func (db *DB) writeDB(dbStructure DBStructure) error {
 }
 
 type User struct {
-	ID    int    `json:"id"`
-	Email string `json:"email"`
+	ID       int    `json:"id"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
-func (db *DB) CreateUser(email string) (User, error) {
+func (db *DB) CreateUser(email, password string) (User, error) {
 	dbStructure, err := db.loadDB()
 	if err != nil {
 		return User{}, err
 	}
 
+	for _, user := range dbStructure.Users {
+		if user.Email == email {
+			return User{}, errors.New("user already exists")
+		}
+	}
+
 	id := len(dbStructure.Users) + 1
 	user := User{
-		ID:   id,
-		Email: email,
+		ID:       id,
+		Email:    email,
+		Password: hashed(password),
 	}
 	dbStructure.Users[id] = user
 
@@ -153,4 +165,94 @@ func (db *DB) CreateUser(email string) (User, error) {
 	}
 
 	return user, nil
+}
+
+func hashed(password string) string {
+	data, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+}
+
+func compareHash(hash, password string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+func (db *DB) Login(email, password string) (User, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return User{}, err
+	}
+
+	for _, user := range dbStructure.Users {
+		if user.Email == email && compareHash(user.Password, password) {
+			return user, nil
+		}
+	}
+
+	return User{}, errors.New("user not found")
+}
+
+func (db *DB) UpdateUser(id int, email, password string) error {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	user, ok := dbStructure.Users[id]
+	if !ok {
+		return errors.New("user not found")
+	}
+
+	if email == "" || password == "" {
+		return errors.New("email or password cannot be empty")
+	}
+
+	user.Email = email
+	user.Password = hashed(password)
+	dbStructure.Users[id] = user
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) RevokeRefreshToken(id int, token string) error {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return err
+	}
+
+	_, ok := dbStructure.RevokedTokens[id]
+	if ok {
+		return errors.New("refresh token already revoked")
+	}
+
+	dbStructure.RevokedTokens[id] = token
+
+	err = db.writeDB(dbStructure)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (db *DB) IsTokenRevoked(id int) (bool, error) {
+	dbStructure, err := db.loadDB()
+	if err != nil {
+		return false, err
+	}
+
+	_, ok := dbStructure.RevokedTokens[id]
+	if ok {
+		return true, nil
+	}
+
+	return false, nil
 }
