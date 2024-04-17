@@ -38,5 +38,7 @@ func main() {
 	mux.HandleFunc("POST /api/refresh", refreshToken)
 	mux.HandleFunc("POST /api/revoke", revokeToken)
 
+	mux.HandleFunc("DELETE /api/chirps/{id}", deleteChirp)
+
 	log.Fatal(http.ListenAndServe(":8080", corsMux))
 }
